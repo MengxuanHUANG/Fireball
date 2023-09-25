@@ -1,6 +1,6 @@
 import {vec2, vec3, vec4, mat4} from 'gl-matrix';
-// import * as Stats from 'stats-js';
-// import * as DAT from 'dat-gui';
+const Stats = require('stats-js');
+import * as DAT from 'dat.gui';
 import Square from './geometry/Square';
 import Icosphere from './geometry/Icosphere';
 import OpenGLRenderer from './rendering/gl/OpenGLRenderer';
@@ -13,6 +13,7 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 const controls = {
   tesselations: 5,
   'Load Scene': loadScene, // A function pointer, essentially
+  speed: 1 
 };
 
 let icosphere: Icosphere;
@@ -29,6 +30,21 @@ function loadScene() {
 }
 
 function main() {
+
+  // Initial display for framerate
+  const stats = Stats();
+  stats.setMode(0);
+  stats.domElement.style.position = 'absolute';
+  stats.domElement.style.left = '0px';
+  stats.domElement.style.top = '0px';
+  document.body.appendChild(stats.domElement);
+
+  // Add controls to the gui
+  const gui = new DAT.GUI();
+  gui.add(controls, 'tesselations', 0, 8).step(1);
+  gui.add(controls, 'Load Scene');
+  gui.add(controls, 'speed', 1, 8).step(0.1);
+
   window.addEventListener('keypress', function (e) {
     // console.log(e.key);
     switch(e.key) {
@@ -41,17 +57,6 @@ function main() {
       // Use this if you wish
     }
   }, false);
-
-  // Initial display for framerate
-  // const stats = Stats();
-  // stats.setMode(0);
-  // stats.domElement.style.position = 'absolute';
-  // stats.domElement.style.left = '0px';
-  // stats.domElement.style.top = '0px';
-  // document.body.appendChild(stats.domElement);
-
-  // Add controls to the gui
-  // const gui = new DAT.GUI();
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -94,7 +99,7 @@ function main() {
     let viewProj = mat4.create();
     mat4.multiply(viewProj, camera.projectionMatrix, camera.viewMatrix);
 
-    // stats.begin();
+    stats.begin();
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
     processKeyPresses();
@@ -125,7 +130,7 @@ function main() {
     flat.setUniformFloat3("u_Right", right);
     renderer.render(camera, flat, [
       square,
-    ], time);
+    ], controls.speed * time);
 
     gl.disable(gl.DEPTH_TEST);
 
@@ -138,7 +143,7 @@ function main() {
     fireball_shader.setUniformMat4("u_ViewProj", viewProj);
     renderer.render(camera, fireball_shader, [
       icosphere,
-    ], time);
+    ], controls.speed * time);
 
     
     mat4.identity(model);
@@ -155,7 +160,7 @@ function main() {
     //], time);
 
     time++;
-    // stats.end();
+    stats.end();
 
     // Tell the browser to call `tick` again whenever it renders a new frame
     requestAnimationFrame(tick);
